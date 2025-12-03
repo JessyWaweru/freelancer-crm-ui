@@ -28,7 +28,15 @@ const router = createBrowserRouter([
       // Add more protected pages here
     ],
   },
-]);
+]
+,
+  {
+    // 👈 this is required for GitHub Pages deployment
+    // if you are deploying to a subdirectory, set the basename accordingly
+    // for example, if your repo is named "freelancer-crm-ui", set basename to "/freelancer-crm-ui"
+    basename: "/freelancer-crm-ui", // 👈 required for GitHub Pages
+  }
+);
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
