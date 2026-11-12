@@ -252,7 +252,7 @@ export default function Projects() {
                         {overdue && <span className="pill pill-overdue">Past deadline</span>}
                       </div>
                       <h3 className="font-extrabold text-ink text-lg leading-snug">{p.title}</h3>
-                      <button className="text-sm text-muted-foreground hover:text-brand" onClick={(e) => { e.stopPropagation(); setParams({ client: String(p.client) }); }}>
+                      <button className="tap text-sm text-muted-foreground hover:text-brand" onClick={(e) => { e.stopPropagation(); setParams({ client: String(p.client) }); }}>
                         {p.client_name}
                       </button>
                     </div>

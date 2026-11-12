@@ -28,6 +28,10 @@ function Section({ icon, title, right, children }: { icon: ReactNode; title: str
   );
 }
 
+function shortMonth(iso: string) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+}
+
 function monthLabel(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 }
@@ -76,11 +80,13 @@ function RetainerMonths({ project, months, onChange }: {
               {m.status === "paid" ? <Check size={16} /> : m.status === "unpaid" ? <AlertCircle size={16} /> : <CalendarDays size={16} />}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="font-bold text-ink text-sm">{monthLabel(m.period)}</div>
-              <div className="text-xs text-muted-foreground truncate">
+              <div className="font-bold text-ink text-sm">
+                <span className="sm:hidden">{shortMonth(m.period)}</span><span className="hidden sm:inline">{monthLabel(m.period)}</span>
+              </div>
+              <div className="text-xs text-muted-foreground">
                 {m.status === "paid"
                   ? `Paid ${date(m.paid_on)}`
-                  : m.status === "unpaid" ? `Due ${relativeDay(m.period)} · ${date(m.period)}` : `Due ${relativeDay(m.period)}`}
+                  : `Due ${relativeDay(m.period)}`}
                 {m.invoice && <> · <Link className="text-brand font-bold" to={`/app/invoices/${m.invoice.id}`}>{m.invoice.number}</Link></>}
               </div>
             </div>
@@ -160,11 +166,13 @@ function Todos({ projectId }: { projectId: number }) {
   const row = (t: Todo) => (
     <motion.li key={t.id} layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 20 }} className="flex items-center gap-3 py-2 group">
       <button
-        className={`grid place-items-center h-6 w-6 shrink-0 rounded-lg border-2 transition-colors ${t.done ? "bg-ok border-ok text-white" : "border-line hover:border-brand"}`}
+        className="group/check grid place-items-center h-10 w-10 -m-2 shrink-0"
         onClick={() => update(t, { done: !t.done })}
         aria-label={t.done ? "Mark not done" : "Mark done"}
       >
-        {t.done && <Check size={14} strokeWidth={3} />}
+        <span className={`grid place-items-center h-6 w-6 rounded-lg border-2 transition-colors ${t.done ? "bg-ok border-ok text-white" : "border-line group-hover/check:border-brand"}`}>
+          {t.done && <Check size={14} strokeWidth={3} />}
+        </span>
       </button>
       <div className="min-w-0 flex-1">
         <div className={`text-sm font-semibold break-words ${t.done ? "line-through text-muted-foreground" : "text-ink"}`}>{t.title}</div>
@@ -375,7 +383,7 @@ export default function ProjectDetail() {
             {overdue && <span className="pill pill-overdue">Past deadline</span>}
           </div>
           <h1 className="text-[1.6rem] sm:text-[2.1rem] font-extrabold break-words">{p.title}</h1>
-          <Link to={`/app/projects?client=${p.client}`} className="text-sm text-muted-foreground hover:text-brand">{p.client_name}</Link>
+          <Link to={`/app/projects?client=${p.client}`} className="tap text-sm text-muted-foreground hover:text-brand">{p.client_name}</Link>
         </div>
       </div>
 
@@ -390,13 +398,13 @@ export default function ProjectDetail() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 mb-6">
         {hasFixed && (
-          <div className="card p-4">
+          <div className="card p-3 sm:p-4 min-w-0">
             <div className="text-[0.7rem] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><CircleDollarSign size={12} /> Project fee</div>
-            <div className="font-extrabold text-ink text-lg mt-1">{money(p.payment_amount, p.payment_currency)}</div>
+            <div className="font-extrabold text-ink text-base sm:text-lg mt-1 break-words">{money(p.payment_amount, p.payment_currency)}</div>
             <select
-              className={`mt-2 pill border-0 cursor-pointer capitalize ${p.payment_status === "paid" ? "pill-paid" : p.payment_status === "partial" ? "pill-sent" : "pill-overdue"}`}
+              className={`mt-2 pill border-0 cursor-pointer capitalize min-h-[36px] ${p.payment_status === "paid" ? "pill-paid" : p.payment_status === "partial" ? "pill-sent" : "pill-overdue"}`}
               value={p.payment_status}
               onChange={(e) => patch({ payment_status: e.target.value as Project["payment_status"] }, "Payment status updated")}
               aria-label="Project fee paid?"
@@ -408,9 +416,9 @@ export default function ProjectDetail() {
           </div>
         )}
         {recurring && (
-          <div className="card p-4">
+          <div className="card p-3 sm:p-4 min-w-0">
             <div className="text-[0.7rem] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Repeat size={12} /> Monthly</div>
-            <div className="font-extrabold text-ink text-lg mt-1">{money(p.monthly_amount, p.payment_currency)}</div>
+            <div className="font-extrabold text-ink text-base sm:text-lg mt-1 break-words">{money(p.monthly_amount, p.payment_currency)}</div>
             <div className="text-xs mt-2">
               {p.unpaid_periods.length > 0
                 ? <span className="pill pill-overdue">{p.unpaid_periods.length} unpaid</span>
@@ -418,9 +426,9 @@ export default function ProjectDetail() {
             </div>
           </div>
         )}
-        <div className={`card p-4 ${hasFixed && recurring ? "col-span-2 lg:col-span-1" : ""}`}>
+        <div className={`card p-3 sm:p-4 min-w-0 ${hasFixed && recurring ? "col-span-2 lg:col-span-1" : ""}`}>
           <div className="text-[0.7rem] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><CalendarDays size={12} /> Deadline</div>
-          <div className={`font-extrabold text-lg mt-1 ${overdue ? "text-destructive" : "text-ink"}`}>{p.due_date ? date(p.due_date) : "None"}</div>
+          <div className={`font-extrabold text-base sm:text-lg mt-1 ${overdue ? "text-destructive" : "text-ink"}`}>{p.due_date ? date(p.due_date) : "None"}</div>
           <div className="text-xs text-muted-foreground mt-2">Started {date(p.start_date)}</div>
         </div>
       </div>

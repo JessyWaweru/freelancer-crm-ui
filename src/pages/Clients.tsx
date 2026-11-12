@@ -45,10 +45,22 @@ export default function Clients() {
   const stats = useMemo(() => {
     const map: Record<number, { projects: number; outstanding: Record<string, number> }> = {};
     for (const p of projects) (map[p.client] ??= { projects: 0, outstanding: {} }).projects++;
-    for (const i of invoices) {
-      if (i.status !== "sent") continue;
-      const s = (map[i.client] ??= { projects: 0, outstanding: {} });
-      s.outstanding[i.currency] = (s.outstanding[i.currency] ?? 0) + Number(i.total);
+    const add = (client: number, cur: string, amt: number) => {
+      const s = (map[client] ??= { projects: 0, outstanding: {} });
+      s.outstanding[cur] = (s.outstanding[cur] ?? 0) + amt;
+    };
+    // Sent invoices waiting for payment.
+    for (const i of invoices) if (i.status === "sent") add(i.client, i.currency, Number(i.total));
+    // Plus fees owed that aren't on a sent invoice yet (same as the Projects "Unpaid fees" tab).
+    for (const p of projects) {
+      const own = invoices.filter((i) => i.project === p.id && i.status !== "void");
+      const sentMonths = new Set(own.filter((i) => i.kind === "monthly" && i.status !== "draft").map((i) => i.period_start));
+      const months = (p.unpaid_periods ?? []).filter((d) => !sentMonths.has(d)).length;
+      if (months) add(p.client, p.payment_currency, months * Number(p.monthly_amount));
+      const feeInvoiced = own.some((i) => i.kind !== "monthly" && i.status !== "draft");
+      if (p.billing_type !== "monthly" && p.payment_status === "unpaid" && !feeInvoiced && Number(p.payment_amount) > 0) {
+        add(p.client, p.payment_currency, Number(p.payment_amount));
+      }
     }
     return map;
   }, [projects, invoices]);
@@ -133,7 +145,7 @@ export default function Clients() {
           action={<button className="btn btn-primary" onClick={openNew}><Plus size={18} /> Add your first client</button>}
         />
       ) : (
-        <motion.div layout className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <motion.div layout className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence>
             {filtered.map((c, idx) => {
               const s = stats[c.id];
@@ -145,7 +157,7 @@ export default function Clients() {
                   initial={{ opacity: 0, y: 16, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: Math.min(idx, 8) * 0.04 } }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="card card-hover p-5 group flex flex-col"
+                  className="card card-hover p-4 sm:p-5 group flex flex-col min-w-0"
                 >
                   <div className="flex items-start gap-3">
                     <div className={`grid place-items-center h-12 w-12 rounded-2xl font-extrabold text-lg shrink-0 ${AVATARS[c.id % AVATARS.length]}`}>
@@ -163,8 +175,8 @@ export default function Clients() {
                     </div>
                   </div>
                   <div className="mt-4 space-y-1.5 text-sm">
-                    <a href={`tel:${c.phone}`} className="flex items-center gap-2 text-text hover:text-brand"><Phone size={14} className="text-brand" /> {c.phone}</a>
-                    {c.email && <a href={`mailto:${c.email}`} className="flex items-center gap-2 text-text hover:text-brand truncate"><Mail size={14} className="text-brand" /> {c.email}</a>}
+                    <a href={`tel:${c.phone}`} className="flex items-center gap-2 py-1 text-text hover:text-brand"><Phone size={14} className="text-brand" /> {c.phone}</a>
+                    {c.email && <a href={`mailto:${c.email}`} className="flex items-center gap-2 py-1 text-text hover:text-brand min-w-0"><Mail size={14} className="text-brand shrink-0" /> <span className="truncate">{c.email}</span></a>}
                   </div>
                   <div className="mt-auto pt-4 flex items-center justify-between gap-2 border-t border-line mt-4">
                     <button className="text-xs font-bold text-muted-foreground inline-flex items-center gap-1.5 hover:text-brand" onClick={() => nav(`/app/projects?client=${c.id}`)}>

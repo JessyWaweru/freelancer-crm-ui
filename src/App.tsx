@@ -74,14 +74,14 @@ function MobileBars({ onLogout }: { onLogout: () => void }) {
       <nav className="no-print lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/90 backdrop-blur-xl border-t border-line pb-[env(safe-area-inset-bottom)]">
         <div className="grid grid-cols-5">
           {NAV.map(({ to, short, icon: Icon, end }) => (
-            <NavLink key={to} to={to} end={end} className="relative flex flex-col items-center gap-1 py-2.5 text-[0.68rem] font-bold">
+            <NavLink key={to} to={to} end={end} className="relative flex min-w-0 flex-col items-center gap-1 py-2.5 text-[0.68rem] max-[359px]:text-[0.62rem] font-bold">
               {({ isActive }) => (
                 <>
                   {isActive && <motion.span layoutId="tab-bg" className="absolute top-0 h-[3px] w-10 rounded-b-full bg-brand" />}
                   <motion.span animate={{ scale: isActive ? 1.12 : 1, y: isActive ? -1 : 0 }} className={isActive ? "text-brand" : "text-muted-foreground"}>
                     <Icon size={21} />
                   </motion.span>
-                  <span className={isActive ? "text-brand" : "text-muted-foreground"}>{short}</span>
+                  <span className={`max-w-full truncate px-0.5 ${isActive ? "text-brand" : "text-muted-foreground"}`}>{short}</span>
                 </>
               )}
             </NavLink>

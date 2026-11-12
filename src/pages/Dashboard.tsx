@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "@/api";
 import { currentUsername } from "@/auth";
+import EarningsPanel from "@/components/EarningsPanel";
 import Segmented from "@/components/Segmented";
 import Stagger, { item } from "@/components/Stagger";
 import StatusPill from "@/components/StatusPill";
@@ -51,6 +52,13 @@ export default function Dashboard() {
   const [recent, setRecent] = useState<Invoice[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [currency, setCurrency] = useState<Currency | null>(null);
+  const [view, setView] = useState<"overview" | "earnings">(() => {
+    try { return localStorage.getItem("crm.dashView") === "earnings" ? "earnings" : "overview"; } catch { return "overview"; }
+  });
+  const pickView = (v: "overview" | "earnings") => {
+    setView(v);
+    try { localStorage.setItem("crm.dashView", v); } catch { /* private mode */ }
+  };
 
   useEffect(() => {
     Promise.all([
@@ -68,6 +76,7 @@ export default function Dashboard() {
     const set = new Set<Currency>();
     data?.totals.forEach((t) => set.add(t.currency));
     data?.mrr.forEach((m) => set.add(m.currency));
+    data?.earnings?.forEach((e) => set.add(e.currency));
     if (set.size === 0 && profile) set.add(profile.default_currency);
     return [...set];
   }, [data, profile]);
@@ -113,13 +122,21 @@ export default function Dashboard() {
         </div>
       </motion.section>
 
-      {/* KPI row */}
-      {currencies.length > 1 && (
-        <div className="mb-3 flex justify-end">
+      {/* Overview / Earnings tabs + currency */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <Segmented
+          value={view}
+          onChange={pickView}
+          options={[{ value: "overview", label: "Overview" }, { value: "earnings", label: "Earnings" }]}
+        />
+        {currencies.length > 1 && (
           <Segmented value={active} onChange={(v) => setCurrency(v)} options={currencies.map((c) => ({ value: c, label: c }))} />
-        </div>
-      )}
-      {data ? (
+        )}
+      </div>
+      {view === "earnings" ? (
+        data ? <EarningsPanel earnings={data.earnings?.find((e) => e.currency === active)} currency={active} />
+          : <div className="skeleton h-[300px] mb-8" />
+      ) : data ? (
         <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
           <Stat label="Outstanding" value={Number(t?.outstanding ?? 0)} currency={active} icon={<Wallet size={18} />} tone="bg-gold-50 text-[#9a6514]" hint="Sent, waiting for payment" />
           <Stat label="Overdue" value={Number(t?.overdue ?? 0)} currency={active} icon={<AlertTriangle size={18} />} tone="bg-[#fdecea] text-destructive" hint="Past the due date" />
@@ -157,7 +174,7 @@ export default function Dashboard() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-extrabold">Recent invoices</h2>
-            <Link to="/app/invoices" className="text-sm font-bold text-brand inline-flex items-center gap-1 group">
+            <Link to="/app/invoices" className="tap text-sm font-bold text-brand inline-flex items-center gap-1 group">
               All <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>

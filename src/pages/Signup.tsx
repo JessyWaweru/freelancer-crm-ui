@@ -87,7 +87,7 @@ export default function Signup() {
           {loading ? <><Loader2 size={18} className="animate-spin" /> Creating account…</> : "Create account"}
         </button>
         <p className="text-sm text-center text-muted-foreground">
-          Already have an account? <Link to="/login" className="font-bold text-brand hover:underline">Log in</Link>
+          Already have an account? <Link to="/login" className="tap font-bold text-brand hover:underline">Log in</Link>
         </p>
       </form>
     </AuthShell>

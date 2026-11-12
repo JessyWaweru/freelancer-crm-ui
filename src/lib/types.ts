@@ -137,7 +137,18 @@ export type Reminder = {
   period?: string | null;
 };
 
+export type Earnings = {
+  currency: Currency;
+  all_time: string | number;
+  this_year: string | number;
+  this_month: string | number;
+  payments: number;
+  by_month: { month: string; amount: string | number }[];
+  by_client: { client: number; name: string; amount: string | number }[];
+};
+
 export type Dashboard = {
+  earnings: Earnings[];
   totals: { currency: Currency; outstanding: string; overdue: string; paid_this_month: string; draft: string }[];
   mrr: { currency: Currency; amount: string }[];
   counts: { clients: number; active_projects: number; open_invoices: number };

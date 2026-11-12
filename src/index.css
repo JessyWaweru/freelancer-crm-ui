@@ -211,6 +211,19 @@
 
 .aurora-bg { position: absolute !important; inset: 0; z-index: 0; pointer-events: none; }
 
+/* ── Phones & touch screens ─────────────────────────────── */
+/* iPhone Safari zooms the page when a field's text is under 16px. */
+@media (max-width: 1023px), (pointer: coarse) {
+  input, select, textarea, .input { font-size: 16px !important; }
+}
+/* Fingers need ~40px targets; desktop keeps the compact sizes. */
+@media (pointer: coarse) {
+  .btn-sm { min-height: 40px; }
+  .segmented button { min-height: 40px; }
+  .icon-btn { min-width: 40px; min-height: 40px; }
+  .tap { display: inline-block; padding-block: 10px; margin-block: -10px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

@@ -52,7 +52,7 @@ export default function Login() {
           {loading ? <><Loader2 size={18} className="animate-spin" /> Logging in…</> : "Log in"}
         </button>
         <p className="text-sm text-center text-muted-foreground">
-          New here? <Link to="/signup" className="font-bold text-brand hover:underline">Create an account</Link>
+          New here? <Link to="/signup" className="tap font-bold text-brand hover:underline">Create an account</Link>
         </p>
       </form>
     </AuthShell>

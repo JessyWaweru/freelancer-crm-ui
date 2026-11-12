@@ -250,7 +250,7 @@ export default function InvoiceView() {
               <div className="flex items-center justify-between text-sm text-cream/70"><span>Subtotal</span><span className="tabular-nums">{money(inv.total, inv.currency)}</span></div>
               <div className="mt-2 pt-3 border-t border-white/15 flex items-end justify-between">
                 <span className="font-bold whitespace-nowrap mr-3">Total due</span>
-                <span className="display text-xl font-extrabold text-gold tabular-nums">{money(inv.total, inv.currency)}</span>
+                <span className="display text-lg sm:text-xl font-extrabold text-gold tabular-nums text-right">{money(inv.total, inv.currency)}</span>
               </div>
             </div>
           </div>
