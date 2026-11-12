@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight, Plus, ReceiptText, Repeat, Search } from "lucide-react";
+import { ChevronRight, Plus, ReceiptText, Repeat, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/api";
 import EmptyState from "@/components/EmptyState";
 import InvoiceEditor from "@/components/InvoiceEditor";
+import Modal from "@/components/Modal";
 import PageHeader from "@/components/PageHeader";
 import ReminderCard from "@/components/ReminderCard";
 import Segmented from "@/components/Segmented";
@@ -25,6 +26,22 @@ export default function Invoices() {
   const [tab, setTab] = useState<Tab>("all");
   const [search, setSearch] = useState("");
   const editorOpen = params.get("new") === "1";
+  const [deleting, setDeleting] = useState<Invoice | null>(null);
+
+  async function confirmDelete() {
+    if (!deleting) return;
+    const target = deleting;
+    setDeleting(null);
+    setInvoices((list) => list.filter((i) => i.id !== target.id));
+    try {
+      await api.delete(`/invoices/${target.id}/`);
+      toast.success(`${target.number} deleted`);
+      refresh();
+    } catch {
+      setInvoices((list) => [...list, target].sort((a, b) => b.id - a.id));
+      toast.error("Couldn't delete the invoice.");
+    }
+  }
 
   useEffect(() => {
     api.get<Invoice[]>("/invoices/")
@@ -100,8 +117,11 @@ export default function Invoices() {
         />
       ) : (
         <div className="card overflow-hidden">
-          <div className="hidden md:grid grid-cols-[110px_1.4fr_1fr_120px_140px_100px_24px] gap-3 px-5 py-3 text-[0.7rem] font-bold uppercase tracking-wider text-muted-foreground border-b border-line bg-tint/40">
-            <span>Number</span><span>Client</span><span>Project</span><span>Due</span><span className="text-right">Amount</span><span>Status</span><span />
+          <div className="hidden md:flex items-center border-b border-line bg-tint/40 pr-2">
+            <div className="flex-1 grid grid-cols-[110px_1.4fr_1fr_120px_140px_100px_24px] gap-3 px-5 py-3 text-[0.7rem] font-bold uppercase tracking-wider text-muted-foreground">
+              <span>Number</span><span>Client</span><span>Project</span><span>Due</span><span className="text-right">Amount</span><span>Status</span><span />
+            </div>
+            <span className="w-9" />
           </div>
           <motion.ul layout className="divide-y divide-line">
             <AnimatePresence initial={false}>
@@ -112,10 +132,11 @@ export default function Invoices() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0, transition: { delay: Math.min(idx, 10) * 0.03 } }}
                   exit={{ opacity: 0 }}
+                  className="flex items-center pr-1 md:pr-2"
                 >
                   <button
                     onClick={() => nav(`/app/invoices/${inv.id}`)}
-                    className="group w-full text-left grid grid-cols-[1fr_auto] md:grid-cols-[110px_1.4fr_1fr_120px_140px_100px_24px] gap-x-3 gap-y-1 items-center px-4 md:px-5 py-3.5 hover:bg-tint/50 transition-colors"
+                    className="group flex-1 min-w-0 text-left grid grid-cols-[1fr_auto] md:grid-cols-[110px_1.4fr_1fr_120px_140px_100px_24px] gap-x-3 gap-y-1 items-center px-4 md:px-5 py-3.5 hover:bg-tint/50 transition-colors"
                   >
                     <span className="font-bold text-brand text-sm order-2 md:order-none text-right md:text-left">{inv.number}</span>
                     <span className="min-w-0 order-1 md:order-none">
@@ -130,6 +151,9 @@ export default function Invoices() {
                     <span className="order-5 md:order-none col-span-2 md:col-span-1"><StatusPill invoice={inv} /></span>
                     <ChevronRight size={18} className="hidden md:block text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-brand" />
                   </button>
+                  <button className="icon-btn !h-9 !w-9 shrink-0 hover:!text-destructive hover:!bg-[#fdecea]" onClick={() => setDeleting(inv)} aria-label={`Delete ${inv.number}`}>
+                    <Trash2 size={16} />
+                  </button>
                 </motion.li>
               ))}
             </AnimatePresence>
@@ -137,6 +161,21 @@ export default function Invoices() {
           {filtered.length === 0 && <p className="text-muted-foreground text-sm p-6 text-center">Nothing here.</p>}
         </div>
       )}
+
+      <Modal
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title={deleting ? `Delete ${deleting.number}?` : ""}
+        subtitle={deleting ? `${deleting.client_name} · ${money(deleting.total, deleting.currency)}. It's removed for good.` : ""}
+        footer={
+          <>
+            <button className="btn btn-outline" onClick={() => setDeleting(null)}>Keep it</button>
+            <button className="btn btn-danger" onClick={confirmDelete}><Trash2 size={16} /> Delete</button>
+          </>
+        }
+      >
+        <span />
+      </Modal>
 
       <InvoiceEditor
         open={editorOpen}

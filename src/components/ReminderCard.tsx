@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { AlertTriangle, CalendarClock, FileText, Repeat, Send } from "lucide-react";
+import { AlertTriangle, CalendarClock, Check, Clock, FileText, Flag, ListTodo, Repeat, Send, Wallet } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -8,7 +8,10 @@ import { useReminders } from "@/hooks/useReminders";
 import { errorText, money, relativeDay } from "@/lib/format";
 import type { Invoice, Reminder } from "@/lib/types";
 
-const ICONS = { monthly_due: Repeat, fixed_due: FileText, draft: Send, overdue: AlertTriangle };
+const ICONS = {
+  monthly_due: Repeat, fixed_due: FileText, draft: Send, overdue: AlertTriangle,
+  retainer_unpaid: Wallet, invoice_due: Clock, deadline: Flag, todo: ListTodo,
+};
 const TONE = {
   overdue: "bg-[#fdecea] text-destructive",
   due: "bg-gold-50 text-[#9a6514]",
@@ -19,6 +22,8 @@ const ACTION_LABEL = {
   generate_fixed: "Create invoice",
   send: "Review & send",
   follow_up: "Open invoice",
+  mark_retainer_paid: "Mark paid",
+  open_project: "Open project",
 };
 
 export default function ReminderCard({ reminder, compact = false, onDone }: { reminder: Reminder; compact?: boolean; onDone?: () => void }) {
@@ -27,7 +32,25 @@ export default function ReminderCard({ reminder, compact = false, onDone }: { re
   const [busy, setBusy] = useState(false);
   const Icon = ICONS[reminder.type];
 
+  async function markPaid() {
+    setBusy(true);
+    try {
+      await api.post(`/projects/${reminder.project}/retainer/`, { period: reminder.period, paid: true });
+      toast.success("Marked paid");
+      await refresh();
+    } catch (e) {
+      toast.error(errorText(e, "Couldn't mark it paid."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function act() {
+    if (reminder.action === "mark_retainer_paid") return markPaid();
+    if (reminder.action === "open_project") {
+      onDone?.();
+      return nav(`/app/projects/${reminder.project}`);
+    }
     if (reminder.action === "generate_monthly" || reminder.action === "generate_fixed") {
       setBusy(true);
       try {
@@ -67,11 +90,17 @@ export default function ReminderCard({ reminder, compact = false, onDone }: { re
             <CalendarClock size={12} /> {relativeDay(reminder.date)}
           </span>
         </div>
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <span className="font-extrabold text-ink text-sm">{money(reminder.amount, reminder.currency)}</span>
-          <button className={`btn btn-sm ${reminder.severity === "overdue" ? "btn-primary" : "btn-outline"}`} disabled={busy} onClick={act}>
-            {busy ? "Creating…" : ACTION_LABEL[reminder.action]}
-          </button>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <span className="font-extrabold text-ink text-sm">{reminder.amount != null ? money(reminder.amount, reminder.currency) : ""}</span>
+          <div className="flex gap-1.5">
+            {/* A retainer month can be paid without ever sending an invoice. */}
+            {reminder.action === "generate_monthly" && reminder.period && (
+              <button className="btn btn-sm btn-ghost" disabled={busy} onClick={markPaid}><Check size={14} /> Paid</button>
+            )}
+            <button className={`btn btn-sm ${reminder.action === "mark_retainer_paid" ? "btn-ok" : reminder.severity === "overdue" ? "btn-primary" : "btn-outline"}`} disabled={busy} onClick={act}>
+              {busy ? "Working…" : ACTION_LABEL[reminder.action]}
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>

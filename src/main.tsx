@@ -10,6 +10,7 @@ import InvoiceView from "./pages/InvoiceView";
 import Invoices from "./pages/Invoices";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
+import ProjectDetail from "./pages/ProjectDetail";
 import Projects from "./pages/Projects";
 import Settings from "./pages/Settings";
 import Signup from "./pages/Signup";
@@ -30,6 +31,7 @@ const router = createBrowserRouter(
         { index: true, element: <Dashboard /> },
         { path: "clients", element: <Clients /> },
         { path: "projects", element: <Projects /> },
+        { path: "projects/:id", element: <ProjectDetail /> },
         { path: "invoices", element: <Invoices /> },
         { path: "invoices/:id", element: <InvoiceView /> },
         { path: "settings", element: <Settings /> },

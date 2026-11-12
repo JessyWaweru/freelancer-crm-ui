@@ -9,6 +9,7 @@ import NotificationBell from "./components/NotificationBell";
 import ClickSpark from "./components/reactbits/ClickSpark";
 import { RemindersProvider, useReminders } from "./hooks/useReminders";
 import { initials } from "./lib/format";
+import { MONEY_REMINDERS } from "./lib/types";
 
 const NAV = [
   { to: "/app", label: "Dashboard", short: "Home", icon: LayoutDashboard, end: true },
@@ -20,6 +21,7 @@ const NAV = [
 
 function Sidebar({ onLogout }: { onLogout: () => void }) {
   const { reminders } = useReminders();
+  const moneyCount = reminders.filter((r) => MONEY_REMINDERS.includes(r.type)).length;
   const user = currentUsername();
   return (
     <aside className="sidebar no-print hidden lg:flex fixed inset-y-0 left-0 w-[264px] flex-col p-5 text-cream z-30">
@@ -35,8 +37,8 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
                 {isActive && <motion.span layoutId="nav-bg" className="nav-bg" transition={{ type: "spring", stiffness: 420, damping: 36 }} />}
                 <Icon size={19} />
                 {label}
-                {label === "Invoices" && reminders.length > 0 && (
-                  <span className="ml-auto rounded-full bg-gold text-ink text-[0.7rem] font-extrabold px-2 py-0.5">{reminders.length}</span>
+                {label === "Invoices" && moneyCount > 0 && (
+                  <span className="ml-auto rounded-full bg-gold text-ink text-[0.7rem] font-extrabold px-2 py-0.5">{moneyCount}</span>
                 )}
               </>
             )}

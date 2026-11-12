@@ -28,6 +28,42 @@ export type Project = {
   monthly_amount: string | number;
   billing_day: number;
   next_invoice_date?: string | null;
+  /** First monthly payment date. Every month after, on billing_day, is another payment. */
+  retainer_start?: string | null;
+  retainer_end?: string | null;
+  items: ProjectItem[];
+  /** Retainer months that are due (on or after their date) and not marked paid. */
+  unpaid_periods: string[];
+  unpaid_retainer_total: string;
+};
+
+/** One priced part of a project, e.g. "Hosting 4000". recurring = part of the monthly retainer. */
+export type ProjectItem = {
+  id?: number;
+  description: string;
+  amount: string | number;
+  recurring: boolean;
+};
+
+export type RetainerMonth = {
+  period: string;
+  period_end: string;
+  amount: string;
+  status: "paid" | "unpaid" | "upcoming";
+  paid_on: string | null;
+  invoice: { id: number; number: string; status: InvoiceStatus } | null;
+};
+
+export type Note = { id: number; project: number; body: string; created_at: string; updated_at: string };
+
+export type Todo = {
+  id: number;
+  project: number;
+  title: string;
+  done: boolean;
+  due_date: string | null;
+  done_at: string | null;
+  created_at: string;
 };
 
 export type InvoiceStatus = "draft" | "sent" | "paid" | "void";
@@ -79,18 +115,26 @@ export type Profile = {
   reminder_days_before: number;
 };
 
+export type ReminderType =
+  | "monthly_due" | "fixed_due" | "draft" | "overdue" | "retainer_unpaid" | "invoice_due" | "deadline" | "todo";
+
+/** Reminders about money (the rest are deadlines and to-dos). */
+export const MONEY_REMINDERS: ReminderType[] = ["monthly_due", "fixed_due", "draft", "overdue", "retainer_unpaid", "invoice_due"];
+
 export type Reminder = {
   id: string;
-  type: "monthly_due" | "fixed_due" | "draft" | "overdue";
+  type: ReminderType;
   severity: "overdue" | "due" | "upcoming";
   date: string;
   title: string;
   detail: string;
-  amount: string;
+  amount: string | null;
   currency: Currency;
   project: number | null;
   invoice: number | null;
-  action: "generate_monthly" | "generate_fixed" | "send" | "follow_up";
+  action: "generate_monthly" | "generate_fixed" | "send" | "follow_up" | "mark_retainer_paid" | "open_project";
+  /** Retainer month this reminder is about, for marking it paid. */
+  period?: string | null;
 };
 
 export type Dashboard = {

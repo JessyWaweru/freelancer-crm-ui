@@ -65,14 +65,14 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
                 }}
               >
                 <BellRing size={18} className="text-gold shrink-0" />
-                <span><b>Turn on alerts</b><br /><span className="text-cream/70">Get a desktop notification when an invoice is due to go out.</span></span>
+                <span><b>Turn on alerts</b><br /><span className="text-cream/70">Get a notification when an invoice, payment, deadline or to-do is due.</span></span>
               </button>
             )}
             <div className="max-h-[60dvh] overflow-y-auto">
               {reminders.length === 0 ? (
                 <div className="py-10 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
                   <CheckCircle2 className="text-ok" size={28} />
-                  All caught up. Nothing to send.
+                  All caught up. Nothing due.
                 </div>
               ) : (
                 <AnimatePresence initial={false}>

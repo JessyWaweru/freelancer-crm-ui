@@ -37,7 +37,7 @@ function notifyNew(reminders: Reminder[], onClick: () => void) {
     if (r.severity === "upcoming" || seen[r.id] === today) continue;
     try {
       const n = new Notification(r.title, {
-        body: `${r.detail} · ${money(r.amount, r.currency)}`,
+        body: r.amount != null ? `${r.detail} · ${money(r.amount, r.currency)}` : r.detail,
         tag: r.id,
         icon: `${import.meta.env.BASE_URL}favicon.svg`,
       });

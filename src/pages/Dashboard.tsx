@@ -100,7 +100,7 @@ export default function Dashboard() {
               {remindersLoading
                 ? "Checking what needs your attention…"
                 : urgent > 0
-                  ? <>You have <b className="text-gold">{urgent} invoice{urgent === 1 ? "" : "s"}</b> that need{urgent === 1 ? "s" : ""} attention today.</>
+                  ? <>You have <b className="text-gold">{urgent} thing{urgent === 1 ? "" : "s"}</b> that need{urgent === 1 ? "s" : ""} attention today.</>
                   : reminders.length > 0
                     ? <>Nothing urgent. {reminders.length} coming up soon.</>
                     : "You're all caught up. Nothing to send right now."}
@@ -144,7 +144,7 @@ export default function Dashboard() {
           ) : reminders.length === 0 ? (
             <div className="card p-8 text-center text-muted-foreground text-sm flex flex-col items-center gap-2">
               <CheckCircle2 size={30} className="text-ok" />
-              Nothing to invoice right now. Reminders show up here {profile?.reminder_days_before ?? 3} days before an invoice is due to go out.
+              Nothing due right now. Invoices, unpaid months, deadlines and to-dos show up here {profile?.reminder_days_before ?? 3} days before they're due.
             </div>
           ) : (
             <div className="grid gap-3">

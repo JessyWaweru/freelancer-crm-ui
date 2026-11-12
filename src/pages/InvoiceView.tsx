@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Ban, CheckCircle2, Copy, Mail, MessageCircle, Pencil, Printer, Send } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, Ban, CheckCircle2, Copy, Download, Mail, MessageCircle, Pencil, Printer, Send, Share2, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/api";
@@ -10,6 +10,7 @@ import Modal from "@/components/Modal";
 import StatusPill from "@/components/StatusPill";
 import { useReminders } from "@/hooks/useReminders";
 import { date, money } from "@/lib/format";
+import { canShareFiles, downloadFile, renderPdf } from "@/lib/pdf";
 import type { Invoice, Profile } from "@/lib/types";
 
 function shareText(inv: Invoice, profile: Profile | null) {
@@ -35,6 +36,10 @@ export default function InvoiceView() {
   const [confirmVoid, setConfirmVoid] = useState(false);
   const [busy, setBusy] = useState(false);
   const [justPaid, setJustPaid] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const sheetRef = useRef<HTMLElement>(null);
+  const shareable = canShareFiles();
 
   useEffect(() => {
     Promise.all([api.get<Invoice>(`/invoices/${id}/`), api.get<Profile>("/profile/")])
@@ -55,6 +60,42 @@ export default function InvoiceView() {
       toast.error("Couldn't update the invoice.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function makePdf(mode: "download" | "share") {
+    if (!inv || !sheetRef.current) return;
+    setPdfBusy(true);
+    try {
+      const name = `${inv.number}${inv.client_name ? ` ${inv.client_name}` : ""}.pdf`.replace(/[\\/:*?"<>|]+/g, "");
+      const file = await renderPdf(sheetRef.current, name);
+      if (mode === "share") {
+        try {
+          await navigator.share({ files: [file], title: `Invoice ${inv.number}`, text: shareText(inv, profile) });
+        } catch (e) {
+          if ((e as Error)?.name !== "AbortError") downloadFile(file);
+        }
+      } else {
+        downloadFile(file);
+        toast.success("PDF downloaded");
+      }
+    } catch {
+      toast.error("Couldn't make the PDF. Try Print → Save as PDF instead.");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!inv) return;
+    setConfirmDelete(false);
+    try {
+      await api.delete(`/invoices/${inv.id}/`);
+      toast.success(`${inv.number} deleted`);
+      refresh();
+      nav("/app/invoices");
+    } catch {
+      toast.error("Couldn't delete the invoice.");
     }
   }
 
@@ -92,10 +133,13 @@ export default function InvoiceView() {
           {inv.status === "sent" && (
             <button className="btn btn-ok" disabled={busy} onClick={() => act("mark_paid", "Payment recorded")}><CheckCircle2 size={16} /> Mark as paid</button>
           )}
-          <button className="btn btn-outline" onClick={() => window.print()}><Printer size={16} /> Print / PDF</button>
+          <button className="btn btn-outline" disabled={pdfBusy} onClick={() => makePdf("download")}><Download size={16} /> {pdfBusy ? "Making PDF…" : "Download PDF"}</button>
+          {shareable && <button className="btn btn-outline" disabled={pdfBusy} onClick={() => makePdf("share")}><Share2 size={16} /> Share PDF</button>}
+          <button className="btn btn-ghost hidden sm:inline-flex" onClick={() => window.print()}><Printer size={16} /> Print</button>
           {(inv.status === "draft" || inv.status === "sent") && (
             <button className="btn btn-ghost" onClick={() => setConfirmVoid(true)}><Ban size={16} /> Void</button>
           )}
+          <button className="btn btn-ghost hover:!text-destructive hover:!bg-[#fdecea]" onClick={() => setConfirmDelete(true)}><Trash2 size={16} /> Delete</button>
         </div>
       </div>
 
@@ -104,7 +148,7 @@ export default function InvoiceView() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="no-print card p-4 mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex-1 text-sm">
             <b className="text-ink">{inv.status === "draft" ? "Send it to your client" : inv.is_overdue ? "Send a payment reminder" : "Share it again"}</b>
-            <p className="text-muted-foreground">Save the PDF, then share it with a ready-made message.{inv.status === "draft" && " Mark it as sent afterwards."}</p>
+            <p className="text-muted-foreground">{shareable ? "Share PDF sends the file and a message in one go." : "Download the PDF, then share it with a ready-made message."}{inv.status === "draft" && " Mark it as sent afterwards."}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {phone && <a className="btn btn-sm bg-[#25d366] text-white hover:bg-[#1da851]" href={waLink} target="_blank" rel="noreferrer"><MessageCircle size={15} /> WhatsApp</a>}
@@ -123,6 +167,7 @@ export default function InvoiceView() {
 
       {/* The sheet */}
       <motion.article
+        ref={sheetRef}
         initial={{ opacity: 0, y: 20, rotateX: 4 }}
         animate={{ opacity: 1, y: 0, rotateX: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -204,7 +249,7 @@ export default function InvoiceView() {
             <div className="w-full sm:w-72 rounded-2xl bg-brand-800 text-cream p-5">
               <div className="flex items-center justify-between text-sm text-cream/70"><span>Subtotal</span><span className="tabular-nums">{money(inv.total, inv.currency)}</span></div>
               <div className="mt-2 pt-3 border-t border-white/15 flex items-end justify-between">
-                <span className="font-bold">Total due</span>
+                <span className="font-bold whitespace-nowrap mr-3">Total due</span>
                 <span className="display text-xl font-extrabold text-gold tabular-nums">{money(inv.total, inv.currency)}</span>
               </div>
             </div>
@@ -235,6 +280,25 @@ export default function InvoiceView() {
         onClose={() => setEditing(false)}
         onSaved={(data) => { setInv(data); setEditing(false); refresh(); }}
       />
+
+      <Modal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title={`Delete ${inv.number}?`}
+        subtitle={
+          inv.kind === "monthly"
+            ? "It's removed for good. That month shows up as ready to invoice again."
+            : "It's removed for good. To keep a record of a sent invoice, void it instead."
+        }
+        footer={
+          <>
+            <button className="btn btn-outline" onClick={() => setConfirmDelete(false)}>Keep it</button>
+            <button className="btn btn-danger" onClick={remove}><Trash2 size={16} /> Delete</button>
+          </>
+        }
+      >
+        <span />
+      </Modal>
 
       <Modal
         open={confirmVoid}

@@ -64,10 +64,14 @@ export default function InvoiceEditor({ open, onClose, invoice, onSaved }: {
     const p = projects.find((x) => x.id === id);
     if (!p) return;
     setCurrency(p.payment_currency);
-    // Pre-fill the first empty line from the project's price.
+    // Pre-fill empty lines from the project's price breakdown (or its single fee).
     setLines((ls) => {
       if (ls.length !== 1 || ls[0].description || ls[0].unit_price) return ls;
       const monthly = p.billing_type === "monthly";
+      const parts = (p.items ?? []).filter((i) => i.recurring === monthly);
+      if (parts.length) {
+        return parts.map((i) => ({ key: nextKey++, description: i.description, quantity: "1", unit_price: String(Number(i.amount) || "") }));
+      }
       return [{ ...ls[0], description: monthly ? `${p.title}: monthly retainer` : `${p.title}: project fee`, unit_price: String(Number(monthly ? p.monthly_amount : p.payment_amount) || "") }];
     });
   }
