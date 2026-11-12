@@ -37,8 +37,8 @@ const router = createBrowserRouter(
     },
     { path: "*", element: <Navigate to="/" replace /> },
   ],
-  // The app is served from /freelancer-crm-ui/ on GitHub Pages.
-  { basename: "/freelancer-crm-ui" }
+  // Follows Vite's `base`: "/" on Render, "/freelancer-crm-ui/" on GitHub Pages.
+  { basename: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" }
 );
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

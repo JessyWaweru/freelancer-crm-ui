@@ -1,0 +1,14 @@
+services:
+  - type: web
+    runtime: static
+    name: freelancer-crm-ui
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE
+        value: https://freelancer-crm-ipx8.onrender.com/api
+    routes:
+      # Single-page app: let React Router handle every path.
+      - type: rewrite
+        source: /*
+        destination: /index.html
