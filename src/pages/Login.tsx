@@ -1,17 +1,14 @@
+import { motion } from "framer-motion";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { login } from "../auth";
-import { useNavigate, Link } from "react-router-dom";
-import logo from "../assets/logo.png.png";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import AuthShell from "@/components/AuthShell";
 
 export default function Login() {
   const [username, setU] = useState("");
   const [password, setP] = useState("");
+  const [show, setShow] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
@@ -21,101 +18,43 @@ export default function Login() {
     setErr("");
     setLoading(true);
     try {
-      await login(username, password);
+      await login(username.trim(), password);
       nav("/app");
-    } catch (e) {
-      setErr("Invalid credentials");
+    } catch {
+      setErr("That username and password don't match.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-700 px-4 text-white">
-      
-      {/* Logo */}
-      <img
-        src={logo}
-        alt="Freelancer CRM Logo"
-        className="absolute top-4 right-4 w-32 h-20 sm:w-40 sm:h-24 md:w-48 md:h-28 object-contain drop-shadow-lg"
-      />
-
-      {/* Login Card */}
-      <Card className="relative w-full max-w-md bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-xl rounded-2xl">
-        <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-2xl font-semibold tracking-tight">
-            Login to Freelancer CRM
-          </CardTitle>
-          <Separator className="bg-white/30 w-1/2 mx-auto" />
-        </CardHeader>
-
-        <form onSubmit={onSubmit}>
-          <CardContent className="flex flex-col space-y-4">
-            {err && (
-              <p className="text-sm text-red-500 bg-red-50/80 border border-red-200 p-2 rounded text-center">
-                {err}
-              </p>
-            )}
-
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="username" className="text-white/90">
-                Username
-              </Label>
-              <Input
-                id="username"
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setU(e.target.value)}
-                className="bg-white text-gray-900 border-gray-300 focus-visible:ring-indigo-500"
-                disabled={loading}
-              />
-            </div>
-
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="password" className="text-white/90">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setP(e.target.value)}
-                className="bg-white text-gray-900 border-gray-300 focus-visible:ring-indigo-500"
-                disabled={loading}
-              />
-            </div>
-          </CardContent>
-
-          <CardFooter className="flex flex-col space-y-4">
-            <Button
-              type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
-              disabled={loading}
-            >
-              Login
-            </Button>
-
-            <p className="text-sm text-gray-200 text-center">
-              New user?{" "}
-              <Link to="/signup" className="text-white font-semibold hover:underline">
-                Sign up
-              </Link>
-            </p>
-          </CardFooter>
-
-          {/* ✅ Full overlay loading screen */}
-          {loading && (
-            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center rounded-2xl">
-              <svg className="w-12 h-12 animate-spin text-white mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-              </svg>
-              <span className="text-white text-lg font-semibold">Logging in...</span>
-            </div>
-          )}
-        </form>
-      </Card>
-    </div>
+    <AuthShell title="Welcome back" subtitle="Log in to see what needs invoicing today.">
+      <form onSubmit={onSubmit} className="grid gap-4">
+        {err && (
+          <motion.p initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: [0, -6, 6, -3, 0] }} className="text-sm text-destructive bg-[#fdecea] rounded-xl p-3">
+            {err}
+          </motion.p>
+        )}
+        <label className="field">
+          <span className="field-label">Username</span>
+          <input className="input" autoComplete="username" value={username} onChange={(e) => setU(e.target.value)} disabled={loading} required autoFocus />
+        </label>
+        <label className="field">
+          <span className="field-label">Password</span>
+          <div className="relative">
+            <input className="input !pr-11" type={show ? "text" : "password"} autoComplete="current-password" value={password} onChange={(e) => setP(e.target.value)} disabled={loading} required />
+            <button type="button" className="absolute right-1 top-1/2 -translate-y-1/2 icon-btn !h-9 !w-9" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide password" : "Show password"}>
+              {show ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
+        </label>
+        <button type="submit" className="btn btn-primary w-full mt-2 !min-h-[48px]" disabled={loading}>
+          {loading ? <><Loader2 size={18} className="animate-spin" /> Logging in…</> : "Log in"}
+        </button>
+        <p className="text-sm text-center text-muted-foreground">
+          New here? <Link to="/signup" className="font-bold text-brand hover:underline">Create an account</Link>
+        </p>
+      </form>
+    </AuthShell>
   );
 }

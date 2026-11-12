@@ -1,191 +1,95 @@
+import { motion } from "framer-motion";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../api";
 import { login } from "../auth";
-import { useNavigate, Link } from "react-router-dom";
-import logo from "../assets/logo.png.png";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import AuthShell from "@/components/AuthShell";
+import { errorText } from "@/lib/format";
 
-/* Password validation */
+/* Password must have lower + upper case and a digit or symbol, 8+ chars. */
 function validatePassword(pw: string) {
-  const re = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W]).{8,}$/;
-  return re.test(pw);
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W]).{8,}$/.test(pw);
 }
 
-function passwordStrengthScore(pw: string) {
+function strengthScore(pw: string) {
   let score = 0;
-  if (!pw) return 0;
-  if (pw.length >= 8) score += 1;
-  if (pw.length >= 12) score += 1;
-  if (/[a-z]/.test(pw)) score += 1;
-  if (/[A-Z]/.test(pw)) score += 1;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+  if (/[\d\W]/.test(pw)) score++;
   return Math.min(score, 4);
 }
 
-function strengthLabel(score: number) {
-  switch (score) {
-    case 1:
-      return "Weak";
-    case 2:
-      return "Fair";
-    case 3:
-      return "Good";
-    case 4:
-      return "Strong";
-    default:
-      return "Very Weak";
-  }
-}
+const LABELS = ["Too short", "Weak", "Fair", "Good", "Strong"];
+const COLORS = ["#e5d6cf", "#b42318", "#e8a83b", "#c0456b", "#1f7a4d"];
 
 export default function Signup() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [show, setShow] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const nav = useNavigate();
-
-  const strength = passwordStrengthScore(password);
-  const strengthText = strengthLabel(strength);
+  const strength = password ? strengthScore(password) : 0;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
-    if (!username.trim()) {
-      setError("Username is required.");
-      return;
-    }
-
+    if (!username.trim()) return setError("Pick a username.");
     if (!validatePassword(password)) {
-      setError(
-        "Password must be at least 8 characters and include uppercase, lowercase, and a number or symbol."
-      );
-      return;
+      return setError("Use at least 8 characters with upper and lower case letters and a number or symbol.");
     }
-
     setLoading(true);
     try {
       await api.post("/register/", { username: username.trim(), password });
-
-      // Attempt auto-login
       try {
         await login(username.trim(), password);
-        nav("/app");
+        nav("/app/settings");
       } catch {
         nav("/login");
       }
-    } catch (err: any) {
-      const resp = err?.response?.data;
-      if (resp?.username) {
-        setError(Array.isArray(resp.username) ? resp.username[0] : resp.username);
-      } else if (resp?.password) {
-        setError(Array.isArray(resp.password) ? resp.password[0] : resp.password);
-      } else if (resp?.detail) {
-        setError(String(resp.detail));
-      } else {
-        setError("Sign up failed. Please try again.");
-      }
+    } catch (err) {
+      setError(errorText(err, "Sign up failed. Please try again."));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center px-4 relative">
-      <img
-        src={logo}
-        alt="Freelancer CRM Logo"
-        className="absolute top-4 right-4 w-32 sm:w-40 md:w-48 h-auto object-contain"
-      />
-
-      <form
-        onSubmit={onSubmit}
-        className="bg-white/10  shadow-lg rounded-2xl p-8 w-full max-w-md space-y-6"
-      >
-        <h2 className="text-2xl font-semibold text-white text-center">Create Account</h2>
-
+    <AuthShell title="Create your account" subtitle="Free. Takes less than a minute.">
+      <form onSubmit={onSubmit} className="grid gap-4">
         {error && (
-          <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded p-2">
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1, x: [0, -6, 6, -3, 0] }} className="text-sm text-destructive bg-[#fdecea] rounded-xl p-3">
             {error}
-          </p>
+          </motion.p>
         )}
-
-        <div className="flex flex-col space-y-2 text-white">
-          <Label htmlFor="username">Username</Label>
-          <Input
-            id="username"
-            placeholder="Your username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            disabled={loading}
-            required
-          />
-        </div>
-
-        <div className="flex flex-col space-y-2 text-white">
-          <Label htmlFor="password">Password</Label>
+        <label className="field">
+          <span className="field-label">Username</span>
+          <input className="input" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} disabled={loading} required autoFocus />
+        </label>
+        <label className="field">
+          <span className="field-label">Password</span>
           <div className="relative">
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Choose a strong password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              required
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-0"
-              onClick={() => setShowPassword((s) => !s)}
-            >
-              {showPassword ? "Hide" : "Show"}
-            </Button>
+            <input className="input !pr-11" type={show ? "text" : "password"} autoComplete="new-password" placeholder="Choose a strong password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} required />
+            <button type="button" className="absolute right-1 top-1/2 -translate-y-1/2 icon-btn !h-9 !w-9" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide password" : "Show password"}>
+              {show ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
           </div>
-
-          {/* Password strength meter */}
-          <div className="mt-3">
-            <div className="flex justify-between text-xs text-white">
-              <span>Password strength</span>
-              <span className="font-medium">{strengthText}</span>
-            </div>
-            <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className={`h-2 transition-all duration-300 ${
-                  strength <= 1
-                    ? "bg-red-500"
-                    : strength === 2
-                    ? "bg-yellow-400"
-                    : strength === 3
-                    ? "bg-amber-400"
-                    : "bg-green-500"
-                }`}
-                style={{ width: `${(strength / 4) * 100}%` }}
-              />
-            </div>
+          <div className="mt-1.5 flex gap-1.5">
+            {[1, 2, 3, 4].map((i) => (
+              <motion.span key={i} className="h-1.5 flex-1 rounded-full" animate={{ backgroundColor: strength >= i ? COLORS[strength] : "#eee1da" }} />
+            ))}
           </div>
-        </div>
-
-        <Button
-          type="submit"
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-          disabled={loading}
-        >
-          {loading ? "Creating account..." : "Sign Up"}
-        </Button>
-
-        <p className="text-sm text-center text-white">
-          Already have an account?{" "}
-          <Link to="/login" className="text-black hover:underline">
-            Log in
-          </Link>
+          <span className="field-hint">{password ? LABELS[strength] : "8+ characters, mixed case, plus a number or symbol"}</span>
+        </label>
+        <button type="submit" className="btn btn-primary w-full mt-2 !min-h-[48px]" disabled={loading}>
+          {loading ? <><Loader2 size={18} className="animate-spin" /> Creating account…</> : "Create account"}
+        </button>
+        <p className="text-sm text-center text-muted-foreground">
+          Already have an account? <Link to="/login" className="font-bold text-brand hover:underline">Log in</Link>
         </p>
       </form>
-    </div>
+    </AuthShell>
   );
 }

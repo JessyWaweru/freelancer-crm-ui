@@ -1,46 +1,48 @@
 import "./index.css";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import App from "./App";
-import Login from "./pages/Login";
-import Clients from "./pages/Clients";
 import ProtectedRoute from "./ProtectedRoute";
-import Projects from "./pages/Projects";
-import Signup from "./pages/Signup";
+import Clients from "./pages/Clients";
+import Dashboard from "./pages/Dashboard";
+import InvoiceView from "./pages/InvoiceView";
+import Invoices from "./pages/Invoices";
 import LandingPage from "./pages/LandingPage";
+import Login from "./pages/Login";
+import Projects from "./pages/Projects";
+import Settings from "./pages/Settings";
+import Signup from "./pages/Signup";
 
-
-const router = createBrowserRouter([
-  { path: "/", element: <LandingPage /> }, // 👈 public landing page
-  { path: "/login", element: <Login /> },
-  { path: "/signup", element: <Signup /> },
-  {
-    path: "/app",
-    element: (
-      <ProtectedRoute>
-        <App />
-      </ProtectedRoute>
-    ),
-    children: [
-      { index: true, element: <Clients /> },
-      { path: "projects", element: <Projects /> },
-      // Add more protected pages here
-    ],
-  },
-]
-,
-  {
-    // 👈 this is required for GitHub Pages deployment
-    // if you are deploying to a subdirectory, set the basename accordingly
-    // for example, if your repo is named "freelancer-crm-ui", set basename to "/freelancer-crm-ui"
-    basename: "/freelancer-crm-ui", // 👈 required for GitHub Pages
-  }
+const router = createBrowserRouter(
+  [
+    { path: "/", element: <LandingPage /> },
+    { path: "/login", element: <Login /> },
+    { path: "/signup", element: <Signup /> },
+    {
+      path: "/app",
+      element: (
+        <ProtectedRoute>
+          <App />
+        </ProtectedRoute>
+      ),
+      children: [
+        { index: true, element: <Dashboard /> },
+        { path: "clients", element: <Clients /> },
+        { path: "projects", element: <Projects /> },
+        { path: "invoices", element: <Invoices /> },
+        { path: "invoices/:id", element: <InvoiceView /> },
+        { path: "settings", element: <Settings /> },
+      ],
+    },
+    { path: "*", element: <Navigate to="/" replace /> },
+  ],
+  // The app is served from /freelancer-crm-ui/ on GitHub Pages.
+  { basename: "/freelancer-crm-ui" }
 );
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <RouterProvider router={router} />
-   
   </React.StrictMode>
 );
