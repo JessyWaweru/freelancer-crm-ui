@@ -87,7 +87,7 @@ export default function Settings() {
           </label>
         </Section>
 
-        <Section icon={<Hash size={20} />} title="Invoices" text="Numbering, currency and payment terms for new invoices." delay={0.06}>
+        <Section icon={<Hash size={20} />} title="Invoices" text="Numbering, currency, payment terms and tax for new invoices." delay={0.06}>
           <label className="field">
             <span className="field-label">Number prefix</span>
             <input className="input uppercase" maxLength={10} value={p.invoice_prefix} onChange={(e) => set("invoice_prefix", e.target.value.toUpperCase())} required />
@@ -108,6 +108,18 @@ export default function Settings() {
             <select className="input" value={p.payment_terms_days} onChange={(e) => set("payment_terms_days", Number(e.target.value))}>
               {[0, 3, 7, 14, 30, 45, 60].map((d) => <option key={d} value={d}>{d === 0 ? "On receipt" : `${d} days`}</option>)}
             </select>
+          </label>
+          <label className="field">
+            <span className="field-label">Tax name</span>
+            <input className="input" maxLength={20} value={p.tax_label} onChange={(e) => set("tax_label", e.target.value)} placeholder="VAT" />
+          </label>
+          <label className="field">
+            <span className="field-label">Default tax rate</span>
+            <div className="relative">
+              <input className="input !pr-8" type="number" min={0} max={100} step="0.01" value={p.default_tax_rate} onChange={(e) => set("default_tax_rate", e.target.value)} />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+            </div>
+            <span className="field-hint">{Number(p.default_tax_rate) > 0 ? `New invoices add ${Number(p.default_tax_rate)}% ${p.tax_label || "tax"}.` : "0 means no tax line. Kenyan VAT is 16%."}</span>
           </label>
         </Section>
 

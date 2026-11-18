@@ -169,6 +169,36 @@
   .pill-overdue { background: #fdecea; color: var(--destructive); }
   .pill-brand { background: var(--brand-50); color: var(--brand); }
   .pill-ink { background: var(--brand-800); color: #fdf7ec; }
+  .pill-partial { background: linear-gradient(90deg, var(--ok-50), var(--gold-50)); color: #6b5410; }
+
+  /* ── Keyboard hints ─────────────────────────────── */
+  .kbd {
+    display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 7px;
+    font: 700 .7rem/1 var(--font-sans); color: var(--muted-foreground); background: #fff;
+    border: 1px solid var(--line); box-shadow: 0 1.5px 0 var(--line);
+  }
+  .kbd-dark { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.14); box-shadow: 0 1.5px 0 rgba(0,0,0,.3); color: rgba(253,247,236,.7); }
+
+  /* ── Paid meter ─────────────────────────────── */
+  .meter { position: relative; height: 10px; border-radius: 999px; background: var(--tint); overflow: hidden; }
+  .meter > span { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: linear-gradient(90deg, var(--ok), #3aa772); }
+
+  /* ── Command palette ─────────────────────────────── */
+  .palette [cmdk-input] { width: 100%; background: transparent; border: 0; outline: none; font-size: 1.02rem; color: var(--ink); }
+  .palette [cmdk-input]::placeholder { color: #b3a3a8; }
+  .palette [cmdk-group-heading] {
+    padding: 10px 12px 6px; font-size: .68rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--muted-foreground);
+  }
+  .palette [cmdk-item] {
+    display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 14px; cursor: pointer;
+    font-size: .92rem; font-weight: 600; color: var(--ink); scroll-margin: 8px; transition: background .12s;
+  }
+  .palette [cmdk-item][data-selected="true"] { background: var(--brand-50); }
+  .palette [cmdk-item][data-selected="true"] .palette-icon { background: var(--brand); color: #fff; }
+  .palette [cmdk-item][data-selected="true"] .palette-go { opacity: 1; transform: none; }
+  .palette-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--tint); color: var(--brand); flex-shrink: 0; transition: background .12s, color .12s; }
+  .palette-go { margin-left: auto; opacity: 0; transform: translateX(-4px); transition: opacity .12s, transform .12s; color: var(--brand); }
+  .palette [cmdk-empty] { padding: 28px 12px; text-align: center; font-size: .9rem; color: var(--muted-foreground); }
 
   /* ── Segmented tabs ─────────────────────────────── */
   .segmented { display: inline-flex; gap: 2px; padding: 4px; border-radius: 999px; background: var(--tint); isolation: isolate; max-width: 100%; overflow-x: auto; scrollbar-width: none; }

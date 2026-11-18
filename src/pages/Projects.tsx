@@ -99,6 +99,14 @@ export default function Projects() {
       .finally(() => setLoading(false));
   }, []);
 
+  // ?new=1 (from the command palette) opens the form once the clients are loaded.
+  useEffect(() => {
+    if (loading || params.get("new") !== "1") return;
+    if (clients.length) openNew();
+    setParams((p) => { p.delete("new"); return p; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, params]);
+
   const scoped = clientFilter ? projects.filter((p) => p.client === clientFilter) : projects;
   const counts = useMemo(() => ({
     active: scoped.filter((p) => p.status === "active").length,

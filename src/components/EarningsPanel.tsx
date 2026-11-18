@@ -91,10 +91,13 @@ function MonthBars({ data, currency }: { data: Earnings["by_month"]; currency: C
         ))}
       </div>
       {/* Same numbers as a table for screen readers */}
-      <table className="sr-only">
-        <caption>Earnings by month</caption>
-        <tbody>{data.map((d, i) => <tr key={d.month}><th>{monthName(d.month, "long")}</th><td>{money(values[i], currency)}</td></tr>)}</tbody>
-      </table>
+      {/* A table can't shrink to sr-only's 1px, so the wrapper hides it. */}
+      <div className="sr-only">
+        <table>
+          <caption>Earnings by month</caption>
+          <tbody>{data.map((d, i) => <tr key={d.month}><th>{monthName(d.month, "long")}</th><td>{money(values[i], currency)}</td></tr>)}</tbody>
+        </table>
+      </div>
     </div>
   );
 }

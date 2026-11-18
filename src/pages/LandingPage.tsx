@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, BellRing, Check, FolderKanban, ReceiptText, Repeat, Users } from "lucide-react";
+import { ArrowRight, BellRing, CalendarClock, Check, FolderKanban, Link2, Repeat, Users, Wallet } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { isAuthed } from "@/auth";
 import Logo from "@/components/Logo";
@@ -9,10 +9,12 @@ import SpotlightCard from "@/components/reactbits/SpotlightCard";
 import { useFinePointer } from "@/hooks/useFinePointer";
 
 const FEATURES = [
-  { icon: Users, title: "Clients in one place", text: "Names, numbers, companies, and what each one owes you." },
-  { icon: Repeat, title: "Bill your way", text: "Fixed project fees, monthly retainers, or a setup fee plus a monthly." },
+  { icon: Users, title: "Clients in one place", text: "Contacts, projects, what each one owes you and how fast they usually pay." },
+  { icon: Repeat, title: "Bill your way", text: "Fixed project fees, monthly retainers, or a setup fee plus a monthly. Tax and discounts built in." },
   { icon: BellRing, title: "Never forget to invoice", text: "Reminders before each invoice is due, and when a client pays late." },
-  { icon: ReceiptText, title: "Invoices that look good", text: "Print to PDF, or share on WhatsApp and email with one tap." },
+  { icon: Link2, title: "A link, not an attachment", text: "Send a link on WhatsApp. Your client sees the invoice and how to pay, and you see when they open it." },
+  { icon: Wallet, title: "Part payments", text: "Record M-Pesa, bank or cash payments as they come in. The balance and earnings keep up." },
+  { icon: CalendarClock, title: "See money coming", text: "A 30-day forecast of sent invoices and retainer months, and what's already late." },
 ];
 
 function InvoicePreview() {
@@ -109,7 +111,7 @@ export default function LandingPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 sm:px-6 pb-20">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map(({ icon: Icon, title, text }, i) => (
             <motion.div
               key={title}

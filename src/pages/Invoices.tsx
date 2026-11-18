@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight, Plus, ReceiptText, Repeat, Search, Trash2 } from "lucide-react";
+import { ChevronRight, Eye, FileSpreadsheet, Plus, ReceiptText, Repeat, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import ReminderCard from "@/components/ReminderCard";
 import Segmented from "@/components/Segmented";
 import StatusPill from "@/components/StatusPill";
 import { useReminders } from "@/hooks/useReminders";
-import { date, money, relativeDay } from "@/lib/format";
+import { date, downloadCsv, money, relativeDay, todayIso } from "@/lib/format";
 import type { Invoice } from "@/lib/types";
 
 type Tab = "all" | "draft" | "sent" | "overdue" | "paid";
@@ -64,13 +64,30 @@ export default function Invoices() {
 
   const toSend = reminders.filter((r) => r.type === "monthly_due" || r.type === "fixed_due");
 
+  /** The invoices in the current tab and search, for a spreadsheet or the accountant. */
+  function exportCsv() {
+    const status = (i: Invoice) => (i.is_overdue ? "overdue" : i.status === "sent" && Number(i.amount_paid) > 0 ? "part paid" : i.status);
+    downloadCsv(`invoices-${todayIso()}.csv`, [
+      ["Number", "Client", "Project", "Status", "Issued", "Due", "Currency", "Subtotal", "Discount", "Tax", "Total", "Paid", "Balance", "Paid on"],
+      ...filtered.map((i) => [
+        i.number, i.client_name, i.project_title ?? "", status(i), i.issue_date, i.due_date, i.currency,
+        i.subtotal, i.discount, i.tax_amount, i.total, i.amount_paid, i.balance, i.paid_at?.slice(0, 10) ?? "",
+      ]),
+    ]);
+  }
+
   return (
     <div>
       <PageHeader
         eyebrow="Get paid"
         title="Invoices"
         subtitle="Create, send and track invoices. Monthly retainers are drafted for you when they're due."
-        actions={<button className="btn btn-primary" onClick={() => setParams({ new: "1" })}><Plus size={18} /> New invoice</button>}
+        actions={
+          <>
+            {invoices.length > 0 && <button className="btn btn-outline" onClick={exportCsv}><FileSpreadsheet size={17} /> Export</button>}
+            <button className="btn btn-primary" onClick={() => setParams({ new: "1" })}><Plus size={18} /> New invoice</button>
+          </>
+        }
       />
 
       <AnimatePresence>
@@ -147,8 +164,22 @@ export default function Invoices() {
                     <span className={`text-xs md:text-sm order-3 md:order-none ${inv.is_overdue ? "text-destructive font-bold" : "text-muted-foreground"}`}>
                       {inv.status === "paid" ? `Paid ${date(inv.paid_at)}` : inv.status === "sent" ? `Due ${relativeDay(inv.due_date)}` : date(inv.due_date)}
                     </span>
-                    <span className="font-extrabold text-ink text-right order-4 md:order-none tabular-nums">{money(inv.total, inv.currency)}</span>
-                    <span className="order-5 md:order-none col-span-2 md:col-span-1"><StatusPill invoice={inv} /></span>
+                    <span className="text-right order-4 md:order-none tabular-nums">
+                      {inv.status === "sent" && Number(inv.amount_paid) > 0 ? (
+                        <>
+                          <span className="block font-extrabold text-ink">{money(inv.balance, inv.currency)}</span>
+                          <span className="block text-[0.7rem] text-muted-foreground">left of {money(inv.total, inv.currency, { compact: true })}</span>
+                        </>
+                      ) : (
+                        <span className="font-extrabold text-ink">{money(inv.total, inv.currency)}</span>
+                      )}
+                    </span>
+                    <span className="order-5 md:order-none col-span-2 md:col-span-1 inline-flex items-center gap-1.5">
+                      <StatusPill invoice={inv} />
+                      {inv.view_count > 0 && inv.status === "sent" && (
+                        <Eye size={14} className="text-brand shrink-0" aria-label={`Client opened it ${inv.view_count} time${inv.view_count === 1 ? "" : "s"}`} />
+                      )}
+                    </span>
                     <ChevronRight size={18} className="hidden md:block text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-brand" />
                   </button>
                   <button className="icon-btn !h-9 !w-9 shrink-0 hover:!text-destructive hover:!bg-[#fdecea]" onClick={() => setDeleting(inv)} aria-label={`Delete ${inv.number}`}>
@@ -179,6 +210,7 @@ export default function Invoices() {
 
       <InvoiceEditor
         open={editorOpen}
+        defaultClient={Number(params.get("client")) || null}
         onClose={() => setParams({})}
         onSaved={(inv) => {
           setParams({});

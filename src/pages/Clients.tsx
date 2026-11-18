@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Building2, FolderKanban, Mail, Pencil, Phone, Plus, Search, Trash2, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/api";
 import EmptyState from "@/components/EmptyState";
@@ -19,6 +19,7 @@ const AVATARS = ["bg-brand text-cream", "bg-gold text-ink", "bg-brand-800 text-g
 
 export default function Clients() {
   const nav = useNavigate();
+  const [params, setParams] = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -42,6 +43,14 @@ export default function Clients() {
       .finally(() => setLoading(false));
   }, []);
 
+  // ?new=1 (from the command palette) opens the form straight away.
+  useEffect(() => {
+    if (params.get("new") !== "1") return;
+    openNew();
+    setParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
   const stats = useMemo(() => {
     const map: Record<number, { projects: number; outstanding: Record<string, number> }> = {};
     for (const p of projects) (map[p.client] ??= { projects: 0, outstanding: {} }).projects++;
@@ -50,7 +59,7 @@ export default function Clients() {
       s.outstanding[cur] = (s.outstanding[cur] ?? 0) + amt;
     };
     // Sent invoices waiting for payment.
-    for (const i of invoices) if (i.status === "sent") add(i.client, i.currency, Number(i.total));
+    for (const i of invoices) if (i.status === "sent") add(i.client, i.currency, Number(i.balance));
     // Plus fees owed that aren't on a sent invoice yet (same as the Projects "Unpaid fees" tab).
     for (const p of projects) {
       const own = invoices.filter((i) => i.project === p.id && i.status !== "void");
@@ -157,29 +166,31 @@ export default function Clients() {
                   initial={{ opacity: 0, y: 16, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: Math.min(idx, 8) * 0.04 } }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="card card-hover p-4 sm:p-5 group flex flex-col min-w-0"
+                  className="card card-hover relative p-4 sm:p-5 group flex flex-col min-w-0"
                 >
                   <div className="flex items-start gap-3">
                     <div className={`grid place-items-center h-12 w-12 rounded-2xl font-extrabold text-lg shrink-0 ${AVATARS[c.id % AVATARS.length]}`}>
                       {initials(c.name)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-extrabold text-ink truncate">{c.name}</h3>
+                      <h3 className="font-extrabold text-ink truncate">
+                        <Link to={`/app/clients/${c.id}`} className="after:absolute after:inset-0 after:content-[''] after:rounded-[20px] hover:text-brand">{c.name}</Link>
+                      </h3>
                       {c.company && (
                         <div className="text-sm text-muted-foreground flex items-center gap-1.5 truncate"><Building2 size={13} /> {c.company}</div>
                       )}
                     </div>
-                    <div className="flex gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <div className="relative z-10 flex gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button className="icon-btn !h-8 !w-8" onClick={() => openEdit(c)} aria-label={`Edit ${c.name}`}><Pencil size={15} /></button>
                       <button className="icon-btn !h-8 !w-8 hover:!text-destructive hover:!bg-[#fdecea]" onClick={() => setDeleting(c)} aria-label={`Delete ${c.name}`}><Trash2 size={15} /></button>
                     </div>
                   </div>
-                  <div className="mt-4 space-y-1.5 text-sm">
+                  <div className="relative z-10 mt-4 space-y-1.5 text-sm self-start max-w-full">
                     <a href={`tel:${c.phone}`} className="flex items-center gap-2 py-1 text-text hover:text-brand"><Phone size={14} className="text-brand" /> {c.phone}</a>
                     {c.email && <a href={`mailto:${c.email}`} className="flex items-center gap-2 py-1 text-text hover:text-brand min-w-0"><Mail size={14} className="text-brand shrink-0" /> <span className="truncate">{c.email}</span></a>}
                   </div>
                   <div className="mt-auto pt-4 flex items-center justify-between gap-2 border-t border-line mt-4">
-                    <button className="text-xs font-bold text-muted-foreground inline-flex items-center gap-1.5 hover:text-brand" onClick={() => nav(`/app/projects?client=${c.id}`)}>
+                    <button className="relative z-10 text-xs font-bold text-muted-foreground inline-flex items-center gap-1.5 hover:text-brand" onClick={() => nav(`/app/projects?client=${c.id}`)}>
                       <FolderKanban size={14} /> {s?.projects ?? 0} project{s?.projects === 1 ? "" : "s"}
                     </button>
                     {owed.length > 0 ? (

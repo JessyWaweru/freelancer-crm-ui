@@ -25,13 +25,16 @@
 
 ## ✨ Features
 
-- 👥 **Clients**: add, edit and delete, with an **international phone input** (country flags + dial codes)
-- 📁 **Projects**: linked to clients through a **command-palette picker** (type to search, ⏎ to select)
-- 💱 **Multi-currency payments** (USD · KES · EUR · GBP), with paid / unpaid / partial status you can **edit inline** from the dashboard
-- 🗂️ **Tabs**: All · Active · Completed · **Outstanding** (the "who still owes me?" view 👀)
-- 🎬 **Framer Motion** animations and confirmation modals that make deleting things feel deliberate
-- 📱 **Mobile-first** collapsible navigation
-- 🔐 **JWT auth** with protected routes; you only ever see your own data (enforced server-side too)
+- 📊 **Dashboard**: outstanding, overdue, paid this month and retainer income per currency, a **30-day cash forecast** timeline, an earnings tab, and a to-do feed of everything that needs action
+- ⌘ **Command palette** (`⌘K` / `Ctrl+K` / `/`): search clients, projects and invoices, create anything, jump anywhere. `G` then `D/C/P/I/S` to navigate, `N` for a new invoice
+- 👥 **Clients** with a detail page: lifetime paid, what they owe now, how many days they usually take to pay, their projects and invoices
+- 📁 **Projects** billed as a fixed fee, a monthly retainer, or both, with a price breakdown, retainer months you can mark paid, to-dos and notes
+- 🧾 **Invoices** with tax (e.g. 16% VAT) and discounts, real PDF download and share, duplicate, void, and CSV export
+- 💳 **Part payments**: record M-Pesa, bank, cash or card payments with a reference; a paid meter and activity timeline per invoice
+- 🔗 **Client links**: send a link on WhatsApp or email; the client gets a clean page with the amount due, how to pay and a PDF, and you see when they opened it (`/i/<token>`, no login)
+- 🔔 Reminders with desktop alerts, a bell, and badges
+- 📱 Mobile-first: bottom tabs, bottom-sheet dialogs, 40px touch targets, checked down to 320px wide
+- ⚡ Each page is its own code-split chunk; the PDF libraries load only when you make a PDF
 
 ## 🏗️ Architecture
 

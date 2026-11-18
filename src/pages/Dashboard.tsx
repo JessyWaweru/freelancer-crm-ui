@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "@/api";
 import { currentUsername } from "@/auth";
+import CashForecast from "@/components/CashForecast";
 import EarningsPanel from "@/components/EarningsPanel";
 import Segmented from "@/components/Segmented";
 import Stagger, { item } from "@/components/Stagger";
@@ -77,6 +78,7 @@ export default function Dashboard() {
     data?.totals.forEach((t) => set.add(t.currency));
     data?.mrr.forEach((m) => set.add(m.currency));
     data?.earnings?.forEach((e) => set.add(e.currency));
+    data?.forecast?.forEach((f) => set.add(f.currency));
     if (set.size === 0 && profile) set.add(profile.default_currency);
     return [...set];
   }, [data, profile]);
@@ -137,15 +139,21 @@ export default function Dashboard() {
         data ? <EarningsPanel earnings={data.earnings?.find((e) => e.currency === active)} currency={active} />
           : <div className="skeleton h-[300px] mb-8" />
       ) : data ? (
-        <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
-          <Stat label="Outstanding" value={Number(t?.outstanding ?? 0)} currency={active} icon={<Wallet size={18} />} tone="bg-gold-50 text-[#9a6514]" hint="Sent, waiting for payment" />
-          <Stat label="Overdue" value={Number(t?.overdue ?? 0)} currency={active} icon={<AlertTriangle size={18} />} tone="bg-[#fdecea] text-destructive" hint="Past the due date" />
-          <Stat label="Paid this month" value={Number(t?.paid_this_month ?? 0)} currency={active} icon={<CheckCircle2 size={18} />} tone="bg-[#e6f4ec] text-ok" />
-          <Stat label="Monthly retainers" value={mrr} currency={active} icon={<Repeat size={18} />} tone="bg-brand-50 text-brand" hint="Billed every month" />
-        </Stagger>
+        <>
+          <Stagger className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-5">
+            <Stat label="Outstanding" value={Number(t?.outstanding ?? 0)} currency={active} icon={<Wallet size={18} />} tone="bg-gold-50 text-[#9a6514]" hint="Sent, still to be paid" />
+            <Stat label="Overdue" value={Number(t?.overdue ?? 0)} currency={active} icon={<AlertTriangle size={18} />} tone="bg-[#fdecea] text-destructive" hint="Past the due date" />
+            <Stat label="Paid this month" value={Number(t?.paid_this_month ?? 0)} currency={active} icon={<CheckCircle2 size={18} />} tone="bg-[#e6f4ec] text-ok" />
+            <Stat label="Monthly retainers" value={mrr} currency={active} icon={<Repeat size={18} />} tone="bg-brand-50 text-brand" hint="Billed every month" />
+          </Stagger>
+          <CashForecast forecast={data.forecast?.find((f) => f.currency === active)} currency={active} />
+        </>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
-          {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-[132px]" />)}
+        <div className="grid gap-3 sm:gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-[132px]" />)}
+          </div>
+          <div className="skeleton h-[230px]" />
         </div>
       )}
 
@@ -194,7 +202,7 @@ export default function Dashboard() {
                         <div className="text-xs text-muted-foreground">{inv.number} · due {date(inv.due_date)}</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-extrabold text-ink text-sm">{money(inv.total, inv.currency)}</div>
+                        <div className="font-extrabold text-ink text-sm">{money(inv.status === "sent" ? inv.balance : inv.total, inv.currency)}</div>
                         <StatusPill invoice={inv} />
                       </div>
                     </Link>

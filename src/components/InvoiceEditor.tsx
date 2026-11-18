@@ -12,11 +12,13 @@ type Line = { key: number; description: string; quantity: string; unit_price: st
 let nextKey = 1;
 const blankLine = (): Line => ({ key: nextKey++, description: "", quantity: "1", unit_price: "" });
 
-export default function InvoiceEditor({ open, onClose, invoice, onSaved }: {
+export default function InvoiceEditor({ open, onClose, invoice, onSaved, defaultClient }: {
   open: boolean;
   onClose: () => void;
   invoice?: Invoice | null;
   onSaved: (inv: Invoice) => void;
+  /** Pre-selects this client on a new invoice. */
+  defaultClient?: number | null;
 }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -28,6 +30,9 @@ export default function InvoiceEditor({ open, onClose, invoice, onSaved }: {
   const [dueDate, setDueDate] = useState(addDaysIso(14));
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<Line[]>([blankLine()]);
+  const [discount, setDiscount] = useState("");
+  const [taxRate, setTaxRate] = useState("0");
+  const [taxLabel, setTaxLabel] = useState("VAT");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -44,8 +49,14 @@ export default function InvoiceEditor({ open, onClose, invoice, onSaved }: {
         setDueDate(invoice.due_date);
         setNotes(invoice.notes);
         setLines(invoice.items.map((i) => ({ key: nextKey++, description: i.description, quantity: String(Number(i.quantity)), unit_price: String(Number(i.unit_price)) })));
+        setDiscount(Number(invoice.discount) ? String(Number(invoice.discount)) : "");
+        setTaxRate(String(Number(invoice.tax_rate)));
+        setTaxLabel(invoice.tax_label || "VAT");
       } else {
-        setClient(c.data.length === 1 ? c.data[0].id : "");
+        setDiscount("");
+        setTaxRate(String(Number(pr.data.default_tax_rate ?? 0)));
+        setTaxLabel(pr.data.tax_label || "VAT");
+        setClient(defaultClient && c.data.some((x) => x.id === defaultClient) ? defaultClient : c.data.length === 1 ? c.data[0].id : "");
         setProject("");
         setCurrency(pr.data.default_currency);
         setIssueDate(todayIso());
@@ -54,10 +65,13 @@ export default function InvoiceEditor({ open, onClose, invoice, onSaved }: {
         setLines([blankLine()]);
       }
     });
-  }, [open, invoice]);
+  }, [open, invoice, defaultClient]);
 
   const clientProjects = projects.filter((p) => p.client === client);
-  const total = useMemo(() => lines.reduce((s, l) => s + (Number(l.quantity) || 0) * (Number(l.unit_price) || 0), 0), [lines]);
+  const subtotal = useMemo(() => lines.reduce((s, l) => s + (Number(l.quantity) || 0) * (Number(l.unit_price) || 0), 0), [lines]);
+  const afterDiscount = Math.max(subtotal - (Number(discount) || 0), 0);
+  const tax = Math.round(afterDiscount * (Number(taxRate) || 0)) / 100;
+  const total = afterDiscount + tax;
 
   function pickProject(id: number | "") {
     setProject(id);
@@ -88,7 +102,10 @@ export default function InvoiceEditor({ open, onClose, invoice, onSaved }: {
     if (!client) return void toast.error("Pick a client.");
     if (items.length === 0) return void toast.error("Add at least one line item.");
     setSaving(true);
-    const payload = { client, project: project || null, currency, issue_date: issueDate, due_date: dueDate, notes, items };
+    const payload = {
+      client, project: project || null, currency, issue_date: issueDate, due_date: dueDate, notes, items,
+      discount: (Number(discount) || 0).toFixed(2), tax_rate: (Number(taxRate) || 0).toFixed(2), tax_label: taxLabel.trim() || "VAT",
+    };
     try {
       const { data } = invoice
         ? await api.patch<Invoice>(`/invoices/${invoice.id}/`, payload)
@@ -108,7 +125,7 @@ export default function InvoiceEditor({ open, onClose, invoice, onSaved }: {
       onClose={onClose}
       wide
       title={invoice ? `Edit ${invoice.number}` : "New invoice"}
-      subtitle={invoice ? "Changes apply before you send it." : `Saved as a draft. Numbering continues from ${profile ? `${profile.invoice_prefix}-${String(profile.next_invoice_number).padStart(4, "0")}` : "your settings"}.`}
+      subtitle={invoice ? (invoice.status === "draft" ? "Changes apply before you send it." : "Your client's link shows the change straight away.") :`Saved as a draft. Numbering continues from ${profile ? `${profile.invoice_prefix}-${String(profile.next_invoice_number).padStart(4, "0")}` : "your settings"}.`}
       footer={
         <>
           <div className="mr-auto self-center text-sm text-muted-foreground">
@@ -189,6 +206,31 @@ export default function InvoiceEditor({ open, onClose, invoice, onSaved }: {
               <Plus size={15} /> Add line
             </button>
           </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-[1fr_280px] items-start">
+          <div className="grid gap-4 grid-cols-2">
+            <label className="field">
+              <span className="field-label">Discount <span className="text-muted-foreground font-medium">({currency})</span></span>
+              <input className="input" type="number" min={0} step="0.01" placeholder="0" value={discount} onChange={(e) => setDiscount(e.target.value)} />
+            </label>
+            <div className="field">
+              <span className="field-label">Tax</span>
+              <div className="grid grid-cols-[1fr_76px] gap-2">
+                <input className="input" aria-label="Tax name" maxLength={20} value={taxLabel} onChange={(e) => setTaxLabel(e.target.value)} />
+                <div className="relative">
+                  <input className="input !pr-7" aria-label="Tax rate" type="number" min={0} max={100} step="0.01" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <dl className="rounded-2xl bg-white border border-line p-4 text-sm grid gap-1.5 tabular-nums">
+            <div className="flex justify-between text-muted-foreground"><dt>Subtotal</dt><dd>{money(subtotal, currency)}</dd></div>
+            {Number(discount) > 0 && <div className="flex justify-between text-muted-foreground"><dt>Discount</dt><dd>−{money(Number(discount), currency)}</dd></div>}
+            {Number(taxRate) > 0 && <div className="flex justify-between text-muted-foreground"><dt>{taxLabel || "Tax"} ({Number(taxRate)}%)</dt><dd>{money(tax, currency)}</dd></div>}
+            <div className="flex justify-between pt-1.5 mt-0.5 border-t border-line font-extrabold text-ink"><dt>Total</dt><dd>{money(total, currency)}</dd></div>
+          </dl>
         </div>
 
         <label className="field">

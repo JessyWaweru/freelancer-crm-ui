@@ -43,6 +43,38 @@ export function relativeDay(d: string) {
   return diff > 0 ? `in ${diff} days` : `${-diff} days ago`;
 }
 
+/** "just now", "5 min ago", "3 h ago", "2 days ago", then a date. */
+export function timeAgo(iso: string | null | undefined) {
+  if (!iso) return "—";
+  const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  const d = Math.floor(s / 86400);
+  if (d < 7) return d === 1 ? "yesterday" : `${d} days ago`;
+  return date(iso);
+}
+
+/** The client-facing link for a shared invoice. */
+export function publicInvoiceUrl(token: string) {
+  return `${window.location.origin}${import.meta.env.BASE_URL}i/${token}`;
+}
+
+/** Download rows as a CSV file (opens fine in Excel and Google Sheets). */
+export function downloadCsv(filename: string, rows: (string | number | null | undefined)[][]) {
+  const cell = (v: string | number | null | undefined) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const blob = new Blob(["﻿" + rows.map((r) => r.map(cell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
 export function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
 }

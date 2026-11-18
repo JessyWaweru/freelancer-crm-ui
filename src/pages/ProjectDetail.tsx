@@ -383,7 +383,7 @@ export default function ProjectDetail() {
             {overdue && <span className="pill pill-overdue">Past deadline</span>}
           </div>
           <h1 className="text-[1.6rem] sm:text-[2.1rem] font-extrabold break-words">{p.title}</h1>
-          <Link to={`/app/projects?client=${p.client}`} className="tap text-sm text-muted-foreground hover:text-brand">{p.client_name}</Link>
+          <Link to={`/app/clients/${p.client}`} className="tap text-sm text-muted-foreground hover:text-brand">{p.client_name}</Link>
         </div>
       </div>
 

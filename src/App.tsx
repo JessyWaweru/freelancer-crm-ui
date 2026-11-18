@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { FolderKanban, LayoutDashboard, LogOut, ReceiptText, Settings, Users } from "lucide-react";
-import { cloneElement, useEffect } from "react";
+import { FolderKanban, LayoutDashboard, LogOut, ReceiptText, Search, Settings, Users } from "lucide-react";
+import { cloneElement, Suspense, useEffect } from "react";
 import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom";
 import { Toaster } from "sonner";
 import { currentUsername, logout } from "./auth";
+import CommandPalette, { isMac, openPalette } from "./components/CommandPalette";
 import Logo from "./components/Logo";
 import NotificationBell from "./components/NotificationBell";
 import ClickSpark from "./components/reactbits/ClickSpark";
@@ -25,10 +26,18 @@ function Sidebar({ onLogout }: { onLogout: () => void }) {
   const user = currentUsername();
   return (
     <aside className="sidebar no-print hidden lg:flex fixed inset-y-0 left-0 w-[264px] flex-col p-5 text-cream z-30">
-      <div className="flex items-center justify-between px-2 pt-1 pb-8">
+      <div className="flex items-center justify-between px-2 pt-1 pb-6">
         <Logo light />
         <NotificationBell dark />
       </div>
+      <button
+        onClick={openPalette}
+        className="group mb-5 flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.06] px-3.5 h-11 text-sm text-cream/60 whitespace-nowrap transition-colors hover:bg-white/10 hover:text-cream"
+      >
+        <Search size={16} className="text-gold shrink-0" />
+        Search…
+        <span className="ml-auto inline-flex gap-1"><span className="kbd kbd-dark">{isMac ? "⌘" : "Ctrl"}</span><span className="kbd kbd-dark">K</span></span>
+      </button>
       <nav className="flex flex-col gap-1">
         {NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
@@ -65,6 +74,9 @@ function MobileBars({ onLogout }: { onLogout: () => void }) {
       <header className="no-print lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-16 bg-cream/85 backdrop-blur-xl border-b border-line">
         <Logo />
         <div className="flex items-center">
+          <button className="icon-btn" onClick={openPalette} aria-label="Search">
+            <Search size={19} />
+          </button>
           <NotificationBell />
           <button className="icon-btn" onClick={onLogout} aria-label="Log out">
             <LogOut size={19} />
@@ -89,6 +101,15 @@ function MobileBars({ onLogout }: { onLogout: () => void }) {
         </div>
       </nav>
     </>
+  );
+}
+
+function PageSkeleton() {
+  return (
+    <div className="grid gap-4">
+      <div className="skeleton h-10 w-56" />
+      <div className="grid gap-4 sm:grid-cols-2"><div className="skeleton h-40" /><div className="skeleton h-40" /></div>
+    </div>
   );
 }
 
@@ -122,13 +143,14 @@ export default function App() {
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  {outlet && cloneElement(outlet)}
+                  <Suspense fallback={<PageSkeleton />}>{outlet && cloneElement(outlet)}</Suspense>
                 </motion.div>
               </AnimatePresence>
             </div>
           </main>
         </div>
       </ClickSpark>
+      <CommandPalette />
       <Toaster position="top-center" richColors closeButton toastOptions={{ style: { fontFamily: "var(--font-sans)", borderRadius: 16 } }} />
     </RemindersProvider>
   );
